@@ -25,5 +25,9 @@ export class UsersService {
         const user = this.usersRepository.create({ email, password: hashedPassword });
         return this.usersRepository.save(user);
       }
+
+      async findByEmail(email: string): Promise<User | null> {
+        return this.usersRepository.findOne({ where: { email } });
+      }     
     
 }
