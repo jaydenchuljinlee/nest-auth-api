@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from '../controller/auth.controller';
 import { AuthService } from '../service/auth.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { Response } from 'express';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -31,29 +32,56 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    const loginDto = {
-      email: 'test@example.com',
-      password: 'secure123',
+    const loginDto = { email: 'test@example.com', password: 'pass1234' };
+    const user = { id: 1, email: loginDto.email };
+    const tokens = {
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
     };
 
-    it('should return accessToken when credentials are valid', async () => {
-      const mockUser = { id: 1, email: loginDto.email };
-      const token = { accessToken: 'signed-token' };
+    it('should return accessToken and set refreshToken cookie', async () => {
+      authService.validateUser!.mockResolvedValue(user);
+      authService.login!.mockResolvedValue(tokens);
 
-      authService.validateUser!.mockResolvedValue(mockUser);
-      authService.login!.mockResolvedValue(token);
+      // mock Response with cookie function
+      const cookieMock = jest.fn();
+      const res = { cookie: cookieMock } as unknown as Response;
 
-      const result = await controller.login(loginDto);
+      const result = await controller.login(loginDto, res);
 
-      expect(authService.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password);
-      expect(authService.login).toHaveBeenCalledWith(mockUser);
-      expect(result).toEqual(token);
+      // ✅ 쿠키 설정 확인
+      expect(cookieMock).toHaveBeenCalledWith(
+        'refresh_token',
+        tokens.refreshToken,
+        expect.objectContaining({
+          httpOnly: true,
+          maxAge: expect.any(Number),
+        }),
+      );
+
+      // ✅ 반환값 확인
+      expect(result).toEqual({ accessToken: tokens.accessToken });
     });
 
-    it('should throw UnauthorizedException when credentials are invalid', async () => {
+    it('should throw UnauthorizedException on failure', async () => {
       authService.validateUser!.mockRejectedValue(new UnauthorizedException());
 
-      await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      const res = { cookie: jest.fn() } as unknown as Response;
+
+      await expect(controller.login(loginDto, res)).rejects.toThrow(UnauthorizedException);
     });
   });
+
+  describe('logout', () => {
+    it('should clear refresh_token cookie and return message', async () => {
+      const clearCookie = jest.fn();
+      const res = { clearCookie } as unknown as Response;
+  
+      const result = await controller.logout(res);
+  
+      expect(clearCookie).toHaveBeenCalledWith('refresh_token');
+      expect(result).toEqual({ message: 'Logged out' });
+    });
+  });
+  
 });

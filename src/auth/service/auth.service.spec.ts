@@ -56,13 +56,24 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should return accessToken', async () => {
+    it('should return access and refresh tokens', async () => {
       const user = { id: 1, email: 'test@example.com' };
-      jwtService.sign!.mockReturnValue('signed-token');
-
+      
+      // jwtService.sign을 호출할 때마다 각각 다른 값을 반환하도록 설정
+      jwtService.sign!
+        .mockReturnValueOnce('access-token')   // 첫 번째 호출: accessToken
+        .mockReturnValueOnce('refresh-token'); // 두 번째 호출: refreshToken
+  
       const result = await authService.login(user as any);
-      expect(result).toEqual({ accessToken: 'signed-token' });
-      expect(jwtService.sign).toBeCalledWith({ sub: user.id, email: user.email });
+  
+      expect(result).toEqual({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      });
+  
+      expect(jwtService.sign).toHaveBeenCalledTimes(2);
+      expect(jwtService.sign).toHaveBeenNthCalledWith(1, { sub: user.id, email: user.email }, { expiresIn: '15m' });
+      expect(jwtService.sign).toHaveBeenNthCalledWith(2, { sub: user.id, email: user.email }, { expiresIn: '7d' });
     });
-  });
+  });  
 });
