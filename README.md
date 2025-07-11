@@ -23,3 +23,18 @@
 ## 📌 5단계: 역할 기반 인증
 - roles 테이블 구성
 - @Roles() 데코레이터 + RolesGuard
+
+---
+
+## 📌 환경 설정 파일 예시 {projectRootDir}/my.env
+```sh
+# JWT
+JWT_SECRET=mySuperSecretKey123!
+JWT_EXPIRES_IN=1h
+# DB
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=myuser
+DB_PASSWORD=mypassword
+DB_NAME=auth
+```
