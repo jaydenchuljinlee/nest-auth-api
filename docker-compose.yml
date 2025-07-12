@@ -1,14 +1,14 @@
 version: '3.8'
 
 services:
-  postgres:
+  nest-auth-postgres:
     image: postgres:15
-    container_name: my-postgres
+    container_name: nest-auth-postgres
     restart: always
     environment:
-      POSTGRES_USER: myuser         # 초기 사용자 ID
-      POSTGRES_PASSWORD: mypassword # 초기 비밀번호
-      POSTGRES_DB: auth             # 초기 데이터베이스 이름
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: auth
     ports:
       - "5432:5432"
     volumes:
@@ -17,8 +17,20 @@ services:
     networks:
       - backend
 
+  nest-auth-redis:
+    image: redis:7
+    container_name: nest-auth-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   backend:
