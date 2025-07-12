@@ -1,14 +1,17 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../../users/service/users.service';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../../users/entity/user.entity';
+import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -37,4 +40,17 @@ export class AuthService {
         refreshToken,
     };    
   }
+
+  async requestPasswordReset(email: string): Promise<string> {
+    const verified = await this.redisService.get(`verify-done:${email}`);
+    if (verified !== 'true') {
+      throw new UnauthorizedException('이메일 인증이 필요합니다.');
+    }
+  
+    const resetPasswordToken = uuidv4(); // 임시 비밀번호 재설정 토큰
+    await this.redisService.set(`reset-password-token:${resetPasswordToken}`, email, 600); // 10분 동안 유효
+  
+    return resetPasswordToken;
+  }
+  
 }

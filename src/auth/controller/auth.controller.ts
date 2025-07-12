@@ -2,6 +2,7 @@ import { Body, Controller, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from '../service/auth.service';
 import { LoginDto } from '../dto/login.dto';
+import { ResetPasswordRequestDto } from '../dto/reset-password-request.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,5 +28,11 @@ export class AuthController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('refresh_token');
     return { message: 'Logged out' };
+  }
+
+  @Post('reset/request')
+  async requestReset(@Body() dto: ResetPasswordRequestDto) {
+    const resetPasswordToken = await this.authService.requestPasswordReset(dto.email);
+    return { resetPasswordToken }; // 클라이언트가 비밀번호 변경 요청 시 이 토큰을 보냄
   }
 }
