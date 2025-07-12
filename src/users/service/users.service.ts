@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entity/user.entity';
@@ -28,6 +28,19 @@ export class UsersService {
 
       async findByEmail(email: string): Promise<User | null> {
         return this.usersRepository.findOne({ where: { email } });
-      }     
+      }
+
+      async updatePassword(email: string, newPassword: string): Promise<void> {
+        const user = await this.findByEmail(email);
+        if (!user) {
+          throw new NotFoundException('사용자를 찾을 수 없습니다.');
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        
+        await this.usersRepository.save(user);
+      }
+    
     
 }

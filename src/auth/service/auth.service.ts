@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { UsersService } from '../../users/service/users.service';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
@@ -52,5 +52,22 @@ export class AuthService {
   
     return resetPasswordToken;
   }
+
+  async resetPassword(resetToken: string, newPassword: string): Promise<void> {
+    const email = await this.redisService.get(`reset-password-token:${resetToken}`);
+    if (!email) {
+      throw new BadRequestException('유효하지 않거나 만료된 토큰입니다.');
+    }
+  
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+  
+    await this.usersService.updatePassword(user.email, newPassword);
+  
+    await this.redisService.delete(`reset-password-token:${resetToken}`);
+  }
+  
   
 }
