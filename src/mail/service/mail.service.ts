@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import { UnauthorizedException } from '@nestjs/common';
 import { generateRandomCode } from '../../common/utis/generate-code';
 import { RedisService } from '../../redis/redis.service';
 
@@ -43,4 +44,15 @@ export class EmailService {
     // 메일 발송
     await this.sendVerificationEmail(email, code);
   }
+
+  async verifyCode(email: string, code: string): Promise<void> {
+    const storedCode = await this.redisService.get(`verify:${email}`);
+  
+    if (!storedCode || storedCode !== code) {
+      throw new UnauthorizedException('인증 코드가 올바르지 않거나 만료되었습니다.');
+    }
+  
+    // 인증 완료 플래그 저장 (옵션)
+    await this.redisService.set(`verify-done:${email}`, 'true', 600); // 10분간 유지
+  }  
 }
