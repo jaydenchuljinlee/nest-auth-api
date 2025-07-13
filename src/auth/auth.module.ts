@@ -6,6 +6,7 @@ import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
+import { RolesGuard } from '../auth/guard/roles.guard'
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { RedisService } from '../redis/redis.service';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, RedisService],
+  providers: [AuthService, JwtStrategy, RedisService, RolesGuard],
   controllers: [AuthController],
 
 })

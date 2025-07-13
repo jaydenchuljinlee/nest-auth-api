@@ -3,6 +3,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UsersService } from '../service/users.service';
 import { User } from '../decorator/user.decorator';
+import { Roles } from '../../auth/decorator/roles.decorator';
+import { RolesGuard } from '../../auth/guard/roles.guard'
 
 
 @Controller('users')
@@ -23,5 +25,12 @@ export class UsersController {
         id: user?.id,
         email: user?.email,
       };
+    }
+
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles('admin')        // admin 역할만 허용
+    @Get('admin')
+    async getAdminResource() {
+      return '관리자 전용 리소스';
     }
 }
