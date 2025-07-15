@@ -1,5 +1,15 @@
 # ✅ 인증 서버 구축 로드맵
 
+## 실행 방법
+```ts
+// 프로젝트 실행
+npm install
+npm start
+
+// 프로젝트 테스트 코드 실행
+npm test
+```
+
 ## 📌 1단계: 기본 회원 가입/로그인 기능
 - 회원가입 API (POST /users/signup)
 - 로그인 API (POST /auth/login)
@@ -37,4 +47,12 @@ DB_PORT=5432
 DB_USERNAME=myuser
 DB_PASSWORD=mypassword
 DB_NAME=auth
+# SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=실제 송신자의 이메일 주소 사용
+SMTP_PASS=비밀번호 혹은 앱 키 사용
+# REDIS
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
