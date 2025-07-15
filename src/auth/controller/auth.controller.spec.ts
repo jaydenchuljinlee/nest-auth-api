@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from '../controller/auth.controller';
 import { AuthService } from '../service/auth.service';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
+import { ResetPasswordRequestDto } from '../dto/reset-password-request.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
+
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -12,6 +15,8 @@ describe('AuthController', () => {
     authService = {
       validateUser: jest.fn(),
       login: jest.fn(),
+      requestPasswordReset: jest.fn(),
+      resetPassword: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -27,10 +32,6 @@ describe('AuthController', () => {
     controller = module.get<AuthController>(AuthController);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
-
   describe('login', () => {
     const loginDto = { email: 'test@example.com', password: 'pass1234' };
     const user = { id: 1, email: loginDto.email };
@@ -43,13 +44,11 @@ describe('AuthController', () => {
       authService.validateUser!.mockResolvedValue(user);
       authService.login!.mockResolvedValue(tokens);
 
-      // mock Response with cookie function
       const cookieMock = jest.fn();
       const res = { cookie: cookieMock } as unknown as Response;
 
       const result = await controller.login(loginDto, res);
 
-      // ✅ 쿠키 설정 확인
       expect(cookieMock).toHaveBeenCalledWith(
         'refresh_token',
         tokens.refreshToken,
@@ -59,13 +58,11 @@ describe('AuthController', () => {
         }),
       );
 
-      // ✅ 반환값 확인
       expect(result).toEqual({ accessToken: tokens.accessToken });
     });
 
     it('should throw UnauthorizedException on failure', async () => {
       authService.validateUser!.mockRejectedValue(new UnauthorizedException());
-
       const res = { cookie: jest.fn() } as unknown as Response;
 
       await expect(controller.login(loginDto, res)).rejects.toThrow(UnauthorizedException);
@@ -76,12 +73,53 @@ describe('AuthController', () => {
     it('should clear refresh_token cookie and return message', async () => {
       const clearCookie = jest.fn();
       const res = { clearCookie } as unknown as Response;
-  
+
       const result = await controller.logout(res);
-  
+
       expect(clearCookie).toHaveBeenCalledWith('refresh_token');
       expect(result).toEqual({ message: 'Logged out' });
     });
   });
-  
+
+  describe('requestReset', () => {
+    const dto: ResetPasswordRequestDto = { email: 'user@example.com' };
+
+    it('should return reset token', async () => {
+      authService.requestPasswordReset!.mockResolvedValue('reset-token');
+
+      const result = await controller.requestReset(dto);
+
+      expect(result).toEqual({ resetPasswordToken: 'reset-token' });
+    });
+
+    it('should throw UnauthorizedException if not verified', async () => {
+      authService.requestPasswordReset!.mockRejectedValue(new UnauthorizedException());
+
+      await expect(controller.requestReset(dto)).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('resetPassword', () => {
+    const dto: ResetPasswordDto = { email: 'user@example.com', resetToken: 'token', newPassword: 'newpass123' };
+
+    it('should return success message', async () => {
+      authService.resetPassword!.mockResolvedValue(undefined);
+
+      const result = await controller.resetPassword(dto);
+
+      expect(result).toEqual({ message: '비밀번호가 성공적으로 변경되었습니다.' });
+    });
+
+    it('should throw BadRequestException for invalid token', async () => {
+      authService.resetPassword!.mockRejectedValue(new BadRequestException());
+
+      await expect(controller.resetPassword(dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException for invalid user', async () => {
+      authService.resetPassword!.mockRejectedValue(new NotFoundException());
+
+      await expect(controller.resetPassword(dto)).rejects.toThrow(NotFoundException);
+    });
+  });
 });
